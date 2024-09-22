@@ -15,12 +15,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                1,
-                0,
-                0
-            ]
+            "production":1
         },
         {
             "name": "资源1的2级机器",
@@ -37,12 +32,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                10,
-                0,
-                0
-            ]
+            "production":10
         }
     ],
     [
@@ -61,12 +51,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                0,
-                1,
-                0
-            ]
+            "production":1
         },
         {
             "name": "资源2的2级机器",
@@ -83,12 +68,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                0,
-                10,
-                0
-            ]
+            "production":10
         }
     ],
     [
@@ -107,12 +87,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                0,
-                0,
-                1
-            ]
+            "production":1
         },
         {
             "name": "资源3的2级机器",
@@ -129,12 +104,7 @@
                 0
             ],
             "power_cost":0,
-            "production":
-            [
-                0,
-                0,
-                10
-            ]
+            "production":10
         }
     ]
 ]
