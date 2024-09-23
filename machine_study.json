@@ -1,0 +1,26 @@
+[
+    {
+        "name": "口算天天练",
+        "build_cost":
+        [
+            10,
+            10,
+            10
+        ],
+        "build_cost_boost": 1.2,
+        "describe": "口算天天练,天天练口算,每秒产生1科技",
+        "production": 1
+    },
+    {
+        "name": "小学奥数",
+        "build_cost":
+        [
+            100,
+            100,
+            100
+        ],
+        "build_cost_boost": 1.2,
+        "describe": "这可相当需要智慧,每秒产生5科技",
+        "production": 5
+    }
+]
