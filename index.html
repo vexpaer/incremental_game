@@ -9,18 +9,15 @@
     var machine_type_number = 2;//机器level数量
     var resource_number = Array(resource_type_number).fill(0);//资源数量
     var resource_name = Array(resource_type_number).fill("");//资源名称
-    var machine = Array(resource_type_number);//机器属性    
-    for(var i=0;i<resource_type_number;i++)
-    {
-        machine[i] = Array(machine_type_number);
-        for(var j=0;j<machine_type_number;j++)
-        {
-            machine[i][j] = {name:"",build_cost:[0,0,0],production:0,power_cost:0,material_cost:[0,0,0]};
-        }
-    }
+    var machine;//机器
+    var machine_study;//科技机器
+
     var machine_number = Array(resource_type_number);//机器数量
     for(var i=0;i<resource_type_number;i++)
     {machine_number[i] = Array(machine_type_number).fill(0);}
+
+    var energy;//能量
+    var knowledge;//知识点数
 
 
     //ui切换函数-----------------------------------------------
@@ -32,53 +29,60 @@
         }
         document.getElementById("ui"+x).style.display="block";
     }
-    
-    //json拉取函数----------------------------------------------
-    function get_json()
-    {
-        
-        fetch('http://47.99.50.95:3000/get-json-resource')//拉取resource json
-        .then(response => response.json())
-        .then(data => {
-            for(var i=0;i<resource_type_number;i++)
-                resource_name[i] = data[i].name;
-        })
-        .catch(error => alert(error));
 
-        
-        
+    //计算机器价格函数
+    function machine_cost(x,level,k)
+    {
+        var tmp = 0;
+        tmp=parseInt(machine[x][level].build_cost[k]*Math.pow(machine[x][level].build_cost_boost,machine_number[x][level]));
+        return tmp;
     }
-    
+
     //初始化函数------------------------------------------------
     window.onload = function()
     {
         ui(1);//默认显示资源页面
 
-        get_json();
+        fetch('http://127.0.0.1:3000/get-json-resource')//拉取resource json
+        .then(response => response.json())
+        .then(data => {
+            for(var i=0;i<resource_type_number;i++)
+                resource_name[i] = data[i].name;
 
-//这块写好json读取后删掉
-        //resource_name = ["木头","石头","铜"];
+            for(var i=0;i<resource_type_number;i++)//更新资源名称
+                document.getElementById("resource_"+i).innerHTML = resource_name[i];
+        })
+        .catch(error => alert(error));
 
-        machine[0][0]={name:"伐木机",build_cost:[10,0,0],production:1};
-        machine[0][1]={name:"伐木场",build_cost:[100,0,0],production:10};
-        machine[1][0]={name:"采石机",build_cost:[0,10,0],production:1};
-        machine[1][1]={name:"采石场",build_cost:[0,100,0],production:10};
-        machine[2][0]={name:"铜矿机",build_cost:[0,0,10],production:1};
-        machine[2][1]={name:"铜矿场",build_cost:[0,0,100],production:10};
+        fetch('http://127.0.0.1:3000/get-json-machine')//拉取machine json
+        .then(response => response.json())
+        .then(data => {
+            machine=data;
 
-//以上写好json读取后删掉
+            for(var i=0;i<resource_type_number;i++)//更新机器名称,描述,购买价格
+                for(var j=0;j<machine_type_number;j++)
+                {
+                    document.getElementById("machine_name_"+i+"."+j).innerHTML = machine[i][j].name;
+                    document.getElementById("machine_describe_"+i+"."+j).innerHTML = machine[i][j].describe;
+                    var tmp=machine[i][j].name;
+                    for(var k=0;k<resource_type_number;k++)
+                    {
+                        if(machine[i][j].build_cost[k]!=0)
+                        tmp+=" "+resource_name[k]+"x"+machine[i][j].build_cost[k];
+                    }
+                    document.getElementById("machine_buy_"+i+"."+j).innerHTML = tmp;
+                }
+        })
+        .catch(error => alert('Error fetching data: '+error)); 
 
-        for(var i=0;i<resource_type_number;i++)//更新资源名称
-            document.getElementById("resource_"+i).innerHTML = resource_name[i];
-        
-
-
-        for(var i=0;i<resource_type_number;i++)//更新机器名称
-            for(var j=0;j<machine_type_number;j++)
-            {
-                document.getElementById("machine_name_"+i+"."+j).innerHTML = machine[i][j].name;
-            }
+        fetch('http://127.0.0.1:3000/get-json-machine-study')//拉取machine_study json
+        .then(response => response.json())
+        .then(data => {
+            machine_study=data;
+        })
+        .catch(error => alert('Error fetching data: '+error));
     };
+
     //update函数,每秒更新----------------------------------------
     setInterval(update, 1000);
     function update()
@@ -88,35 +92,47 @@
             var velocity = 0;
             for(var j=0;j<machine_type_number;j++)
             {
-                resource_number[i]+=machine_number[i][j]*machine[i][j].production;
                 velocity+=machine_number[i][j]*machine[i][j].production;
             }
+            resource_number[i]+=velocity;
             document.getElementById("resource_"+i+"_number").innerHTML = resource_number[i];
             document.getElementById("resource_"+i).innerHTML = resource_name[i]+" +"+velocity+"/s";
         }
             
     }
+    
     //资源获取---------------------------------------------------
     function get_resource(x)//获取资源
     {
         resource_number[x]+=1;
         document.getElementById("resource_"+x+"_number").innerHTML = resource_number[x];
     }
-    //获取资源机器------------------------------------------------
+
+    //购买资源机器------------------------------------------------
     function get_machine(x,level)//获取机器
     {
+        //检测能不能买得起
         var flag=1;
         for(var i=0;i<resource_type_number;i++)
-            if(resource_number[i]<machine[x][level].build_cost[i])
+            if(resource_number[i]<machine_cost(x,level,i))
                 flag=0;
-        if(flag==1)
+
+        if(flag==1)//如果买得起
         {
             for(var i=0;i<resource_type_number;i++)
-                resource_number[i]-=machine[x][level].build_cost[i];
+                resource_number[i]-=machine_cost(x,level,i);
             for(var i=0;i<resource_type_number;i++)
                 document.getElementById("resource_"+i+"_number").innerHTML = resource_number[i];
             machine_number[x][level]+=1;
             document.getElementById("machine_number_"+x+"."+level).innerHTML = machine_number[x][level];
+            //更新价格
+            var tmp=machine[x][level].name;
+            for(var k=0;k<resource_type_number;k++)
+            {
+                if(machine[x][level].build_cost[k]!=0)
+                tmp+=" "+resource_name[k]+"x"+machine_cost(x,level,k);
+            }
+            document.getElementById("machine_buy_"+x+"."+level).innerHTML = tmp;
         }
         if(flag==0) alert("资源不足");
     }
@@ -132,36 +148,59 @@
         <div id="resource_0">资源0</div>
             <div id="resource_0_number">0</div>
             <button onclick="get_resource(0)">获取</button>
-            <button onclick="get_machine(0,0)">机器0.0</button>
-            <button onclick="get_machine(0,1)">机器0.1</button>
-            <div id="machine_name_0.0">机器0.0</div>
-            <div id="machine_number_0.0">0</div>
-            <div id="machine_name_0.1">机器0.1</div>
-            <div id="machine_number_0.1">0</div>
+            <hr>
+            <div class="level_0" id="machine_name_0.0">机器0.0</div>
+            <button id="machine_buy_0.0" onclick="get_machine(0,0)">机器0.0</button>
+            <div class="level_0" id="machine_describe_0.0">机器0.0描述</div>
+            <div class="level_0" id="machine_number_0.0">0</div>
+            <hr>
+            <div class="level_1" id="machine_name_0.1">机器0.1</div>
+            <button id="machine_buy_0.1" onclick="get_machine(0,1)">机器0.1</button>
+            <div class="level_1" id="machine_describe_0.1">机器0.1描述</div>
+            <div class="level_1" id="machine_number_0.1">0</div>
             <hr>
         <div id="resource_1">资源1</div>
             <div id="resource_1_number">0</div>
             <button onclick="get_resource(1)">获取</button>
-            <button onclick="get_machine(1,0)">机器1.0</button>
-            <button onclick="get_machine(1,1)">机器1.1</button>
-            <div id="machine_name_1.0">机器1.0</div>
-            <div id="machine_number_1.0">0</div>
-            <div id="machine_name_1.1">机器1.1</div>
-            <div id="machine_number_1.1">0</div>
+            <hr>
+            <div class="level_0" id="machine_name_1.0">机器1.0</div>
+            <button id="machine_buy_1.0" onclick="get_machine(1,0)">机器1.0</button>
+            <div class="level_0" id="machine_describe_1.0">机器1.0描述</div>
+            <div class="level_0" id="machine_number_1.0">0</div>
+            <hr>
+            <div class="level_1" id="machine_name_1.1">机器1.1</div>
+            <button id="machine_buy_1.1" onclick="get_machine(1,1)">机器1.1</button>
+            <div class="level_1" id="machine_describe_1.1">机器1.1描述</div>
+            <div class="level_1" id="machine_number_1.1">0</div>
             <hr>
         <div id="resource_2">资源2</div>
             <div id="resource_2_number">0</div>
             <button onclick="get_resource(2)">获取</button>
-            <button onclick="get_machine(2,0)">机器2.0</button>
-            <button onclick="get_machine(2,1)">机器2.1</button>
-            <div id="machine_name_2.0">机器2.0</div>
-            <div id="machine_number_2.0">0</div>
-            <div id="machine_name_2.1">机器2.1</div>
-            <div id="machine_number_2.1">0</div>
+            <hr>
+            <div class="level_0" id="machine_name_2.0">机器2.0</div>
+            <button id="machine_buy_2.0" onclick="get_machine(2,0)">机器2.0</button>
+            <div class="level_0" id="machine_describe_2.0">机器2.0描述</div>
+            <div class="level_0" id="machine_number_2.0">0</div>
+            <hr>
+            <div class="level_1" id="machine_name_2.1">机器2.1</div>
+            <button id="machine_buy_2.1" onclick="get_machine(2,1)">机器2.1</button>
+            <div class="level_1" id="machine_describe_2.1">机器2.1描述</div>
+            <div class="level_1" id="machine_number_2.1">0</div>
     </div>
     <div id="ui2">研究
         <hr>
-        <div>知识</div>
+        <div>科学生产</div>
+            <div id="knowledge_number">知识点数</div>
+            <hr>
+            <div class="study_0" id="machine_study_name_0">知识机器0</div>
+            <button class="study_0" id="machine_study_buy_0" onclick="get_machine_study(0)">知识机器购买</button>
+            <div class="study_0" id="machine_study_describe_0">知识机器描述</div>
+            <hr>
+            <div class="study_1" id="machine_study_name_1">知识机器1</div>
+            <button class="study_1" id="machine_study_buy_1" onclick="get_machine_study(0)">知识机器购买</button>
+            <div class="study_1" id="machine_study_describe_1">知识机器描述</div>
+        <hr>
+        <div>科技</div>
     </div>
     
 </body>
