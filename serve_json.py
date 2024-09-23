@@ -17,5 +17,13 @@ def get_json2():
 def get_json3():
     return send_from_directory('.', 'machine_study.json', as_attachment=True)
 
+@app.route('/get-json-machine-power')
+def get_json4():
+    return send_from_directory('.', 'machine_power.json', as_attachment=True)
+
+@app.route('/get-json-unlock')
+def get_json5():
+    return send_from_directory('.', 'unlock.json', as_attachment=True)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000)

@@ -7,17 +7,41 @@
     //定义变量--------------------------------------------------
     var resource_type_number = 3;//资源类型数量
     var machine_type_number = 2;//机器level数量
+    var machine_study_type_number = 2;//科技机器level数量
+    var machine_power_type_number = 2;//能源机器level数量
+
+
+    var power=0;//能量数量
+    var knowledge=0;//知识数量
     var resource_number = Array(resource_type_number).fill(0);//资源数量
     var resource_name = Array(resource_type_number).fill("");//资源名称
-    var machine;//机器
-    var machine_study;//科技机器
 
-    var machine_number = Array(resource_type_number);//机器数量
+    var unlock_type_number = 7;//可解锁数量
+    var unlock;//解锁表
+    var unlock_switch = Array(unlock_type_number).fill(0);//是否解锁
+    unlock_switch[0] = 1;//解锁第一个解锁
+
+    var machine;//资源机器
+
+    var machine_number = Array(resource_type_number);//资源机器数量
     for(var i=0;i<resource_type_number;i++)
     {machine_number[i] = Array(machine_type_number).fill(0);}
 
-    var energy;//能量
-    var knowledge;//知识点数
+    var machine_switch = Array(resource_type_number);//资源机器开关
+    for(var i=0;i<resource_type_number;i++)
+    {machine_switch[i] = Array(machine_type_number).fill(1);}
+
+
+
+    var machine_study;//科技机器
+    var machine_study_number = Array(machine_type_number).fill(0);//科技机器数量
+
+
+
+    var machine_power;//能源机器
+    var machine_power_number = Array(machine_type_number).fill(0);//能源机器数量
+    var machine_power_switch = Array(machine_type_number).fill(1);//能源机器开关
+
 
 
     //ui切换函数-----------------------------------------------
@@ -30,11 +54,27 @@
         document.getElementById("ui"+x).style.display="block";
     }
 
-    //计算机器价格函数
+    //计算机器价格函数------------------------------------------
     function machine_cost(x,level,k)
     {
         var tmp = 0;
         tmp=parseInt(machine[x][level].build_cost[k]*Math.pow(machine[x][level].build_cost_boost,machine_number[x][level]));
+        return tmp;
+    }
+
+    //计算能源机器价格函数---------------------------------------
+    function machine_power_cost(x,k)
+    {
+        var tmp = 0;
+        tmp=parseInt(machine_power[x].build_cost[k]*Math.pow(machine_power[x].build_cost_boost,machine_power_number[x]));
+        return tmp;
+    }
+
+    //计算科技机器价格函数---------------------------------------
+    function machine_study_cost(x,k)
+    {
+        var tmp = 0;
+        tmp=parseInt(machine_study[x].build_cost[k]*Math.pow(machine_study[x].build_cost_boost,machine_study_number[x]));
         return tmp;
     }
 
@@ -53,6 +93,7 @@
                 document.getElementById("resource_"+i).innerHTML = resource_name[i];
         })
         .catch(error => alert(error));
+
 
         fetch('http://127.0.0.1:3000/get-json-machine')//拉取machine json
         .then(response => response.json())
@@ -75,24 +116,125 @@
         })
         .catch(error => alert('Error fetching data: '+error)); 
 
+
         fetch('http://127.0.0.1:3000/get-json-machine-study')//拉取machine_study json
         .then(response => response.json())
         .then(data => {
             machine_study=data;
+
+            for(var i=0;i<machine_type_number;i++)//更新科技机器名称,描述,购买价格
+            {
+                document.getElementById("machine_study_name_"+i).innerHTML = machine_study[i].name;
+                document.getElementById("machine_study_describe_"+i).innerHTML = machine_study[i].describe;
+                var tmp=machine_study[i].name;
+                for(var k=0;k<resource_type_number;k++)
+                {
+                    if(machine_study[i].build_cost[k]!=0)
+                    tmp+=" "+resource_name[k]+"x"+machine_study[i].build_cost[k];
+                }
+                document.getElementById("machine_study_buy_"+i).innerHTML = tmp;
+            }
         })
         .catch(error => alert('Error fetching data: '+error));
-    };
+
+
+        fetch('http://127.0.0.1:3000/get-json-machine-power')//拉取machine_power json
+        .then(response => response.json())
+        .then(data => {
+            machine_power=data;
+
+            for(var i=0;i<machine_type_number;i++)//更新科技机器名称,描述,购买价格
+            {
+                document.getElementById("machine_power_name_"+i).innerHTML = machine_power[i].name;
+                document.getElementById("machine_power_describe_"+i).innerHTML = machine_power[i].describe;
+                var tmp=machine_power[i].name;
+                for(var k=0;k<resource_type_number;k++)
+                {
+                    if(machine_power[i].build_cost[k]!=0)
+                    tmp+=" "+resource_name[k]+"x"+machine_power[i].build_cost[k];
+                }
+                document.getElementById("machine_power_buy_"+i).innerHTML = tmp;
+            }
+        })
+        .catch(error => alert('Error fetching data: '+error));
+
+//        fetch('http://127.0.0.1:3000/get-json-unlock')//拉取machine_power_switch json
+    }
 
     //update函数,每秒更新----------------------------------------
     setInterval(update, 1000);
     function update()
     {
+        //增加知识点
+        var knowledge_velocity=0;
+        for(var i=0;i<machine_study_type_number;i++)
+        {
+            knowledge_velocity+=machine_study_number[i]*machine_study[i].production;
+        }
+        knowledge+=knowledge_velocity;
+        var word_for_knowledge="知识点数 ";
+        word_for_knowledge+=knowledge+" +"+knowledge_velocity+"/s";
+        document.getElementById("knowledge_number").innerHTML = word_for_knowledge;
+
+        //检测能源机器有无资源
+        var power_velocity=0;
+        for(var i=0;i<machine_power_type_number;i++)
+        {
+            for(var j=0;j<resource_type_number;j++)
+            {
+                if(machine_power_number[i]>0)
+                {
+                    if(machine_power_number[i]*machine_power[i].material_cost[j]*machine_power_switch[i]>resource_number[j])
+                    {//如果资源不足就关机
+                        machine_power_switch[i]=0;
+                        document.getElementById("machine_power_switch_"+i).innerHTML = "关";
+                    }
+                }
+            }
+            //计算能力速度
+            power_velocity+=machine_power_number[i]*machine_power[i].production*machine_power_switch[i];
+        }
+        power+=power_velocity;
+        var word_for_power="能源 ";
+        word_for_power+=power+" +"+power_velocity+"/s";
+        document.getElementById("power_number").innerHTML = word_for_power;
+
+        //检测机器有无足够资源/电力生产
+        for(var i=0;i<resource_type_number;i++)
+        {
+            for(var j=0;j<machine_type_number;j++)
+            {
+                if(machine_number[i][j]>0)
+                {
+                    if(machine_number[i][j]*machine[i][j].power_cost*machine_switch[i][j]>power)
+                    {//如果电力不足就关机
+                        machine_switch[i][j]=0;
+                        document.getElementById("machine_switch_"+i+"."+j).innerHTML = "关";
+                    }
+                    power-=machine_number[i][j]*machine[i][j].power_cost*machine_switch[i][j];
+                    for(var k=0;k<resource_type_number;k++)
+                    {
+                        if(machine_number[i][j]*machine[i][j].material_cost[k]*machine_switch[i][j]>resource_number[k])
+                        {//如果资源不足就关机
+                            machine_switch[i][j]=0;
+                            document.getElementById("machine_switch_"+i+"."+j).innerHTML = "关";
+                        }
+                        resource_number[k]-=machine_number[i][j]*machine[i][j].material_cost[k]*machine_switch[i][j];
+                    }
+                }   
+            }
+        }
+        //计算资源生产速度
         for(var i=0;i<resource_type_number;i++)
         {
             var velocity = 0;
-            for(var j=0;j<machine_type_number;j++)
+            for(var j=0;j<machine_power_type_number;j++)//计算能源机器消耗速度
             {
-                velocity+=machine_number[i][j]*machine[i][j].production;
+                velocity-=machine_power_number[j]*machine_power[j].material_cost[i]*machine_power_switch[j];
+            }
+            for(var j=0;j<machine_type_number;j++)//计算资源机器产速
+            {
+                velocity+=machine_number[i][j]*machine[i][j].production*machine_switch[i][j];
             }
             resource_number[i]+=velocity;
             document.getElementById("resource_"+i+"_number").innerHTML = resource_number[i];
@@ -136,27 +278,104 @@
         }
         if(flag==0) alert("资源不足");
     }
+
+    //购买能源机器------------------------------------------------
+    function get_machine_power(x)//获取能源机器
+    {
+        //检测能不能买得起
+        var flag=1;
+        for(var i=0;i<resource_type_number;i++)
+            if(resource_number[i]<machine_power_cost(x,i))
+                flag=0;
+        if(flag==1)//如果买得起
+        {
+            for(var i=0;i<resource_type_number;i++)
+                resource_number[i]-=machine_power_cost(x,i);
+            for(var i=0;i<resource_type_number;i++)
+                document.getElementById("resource_"+i+"_number").innerHTML = resource_number[i];
+            machine_power_number[x]+=1;
+            document.getElementById("machine_power_number_"+x).innerHTML = machine_power_number[x];
+            //更新价格
+            var tmp=machine_power[x].name;
+            for(var k=0;k<resource_type_number;k++)
+            {
+                if(machine_power_cost(x,k)!=0)
+                    tmp+=" "+resource_name[k]+"x"+machine_power_cost(x,k);
+            }
+            document.getElementById("machine_power_buy_"+x).innerHTML = tmp;
+        }
+        if(flag==0) alert("资源不足");
+    }
+
+    //购买科技机器------------------------------------------------
+    function get_machine_study(x)//获取科技机器
+    {
+        //检测能不能买得起
+        var flag=1;
+        for(var i=0;i<resource_type_number;i++)
+            if(resource_number[i]<machine_study_cost(x,i))
+                flag=0;
+        if(flag==1)//如果买得起
+        {
+            for(var i=0;i<resource_type_number;i++)
+                resource_number[i]-=machine_study_cost(x,i);
+            for(var i=0;i<resource_type_number;i++)
+                document.getElementById("resource_"+i+"_number").innerHTML = resource_number[i];
+            machine_study_number[x]+=1;//更新数量
+            document.getElementById("machine_study_number_"+x).innerHTML = machine_study_number[x];
+            //更新价格
+            var tmp=machine_study[x].name;
+            for(var k=0;k<resource_type_number;k++)
+            {
+                if(machine_study_cost(x,k)!=0)
+                    tmp+=" "+resource_name[k]+"x"+machine_study_cost(x,k);
+            }
+            document.getElementById("machine_study_buy_"+x).innerHTML = tmp;
+        }
+        if(flag==0) alert("资源不足");
+    }
+
+    //花费知识点进行解锁-------------------------------------------
+    function get_unlock(x)//获取解锁
+    {
+
+    }
 </script>
 </head>
 
 <body>
     <button onclick="ui(1)">资源</button><button onclick="ui(2)">研究</button>
     <div id="ui1">资源
-        <div id="power">能源</div>
-
-        <hr>
+        <div class="power_0" id="power">能源
+            <div class="power_0" id="power_number">0</div>
+            <hr>
+            <div class="power_0" id="machine_power_name_0">能源机器0</div>
+            <button class="power_0" id="machine_power_buy_0" onclick="get_machine_power(0)">能源机器0</button>
+            <div class="power_0" id="machine_power_describe_0">能源机器描述</div>
+            <div class="power_0" id="machine_power_switch_0">开</div>
+            <div class="power_0" id="machine_power_number_0">0</div>
+            <hr>
+            <div class="power_1" id="machine_power_name_1">能源机器1</div>
+            <button class="power_1" id="machine_power_buy_1" onclick="get_machine_power(1)">能源机器1</button>
+            <div class="power_1" id="machine_power_describe_1">能源机器描述</div>
+            <div class="power_1" id="machine_power_switch_1">开</div>
+            <div class="power_1" id="machine_power_number_1">0</div>
+        </div>
+            <hr>
         <div id="resource_0">资源0</div>
             <div id="resource_0_number">0</div>
             <button onclick="get_resource(0)">获取</button>
             <hr>
             <div class="level_0" id="machine_name_0.0">机器0.0</div>
-            <button id="machine_buy_0.0" onclick="get_machine(0,0)">机器0.0</button>
+            <button class="level_0" id="machine_buy_0.0" onclick="get_machine(0,0)">机器0.0</button>
             <div class="level_0" id="machine_describe_0.0">机器0.0描述</div>
+            <div class="level_0" id="machine_switch_0.0">开</div>
             <div class="level_0" id="machine_number_0.0">0</div>
             <hr>
             <div class="level_1" id="machine_name_0.1">机器0.1</div>
-            <button id="machine_buy_0.1" onclick="get_machine(0,1)">机器0.1</button>
+            <button class="level_1" id="machine_buy_0.1" onclick="get_machine(0,1)">机器0.1</button>
             <div class="level_1" id="machine_describe_0.1">机器0.1描述</div>
+            <div class="level_1" id="machine_switch_0.1">开</div>
             <div class="level_1" id="machine_number_0.1">0</div>
             <hr>
         <div id="resource_1">资源1</div>
@@ -164,13 +383,15 @@
             <button onclick="get_resource(1)">获取</button>
             <hr>
             <div class="level_0" id="machine_name_1.0">机器1.0</div>
-            <button id="machine_buy_1.0" onclick="get_machine(1,0)">机器1.0</button>
+            <button class="level_0" id="machine_buy_1.0" onclick="get_machine(1,0)">机器1.0</button>
             <div class="level_0" id="machine_describe_1.0">机器1.0描述</div>
+            <div class="level_0" id="machine_switch_1.0">开</div>
             <div class="level_0" id="machine_number_1.0">0</div>
             <hr>
             <div class="level_1" id="machine_name_1.1">机器1.1</div>
-            <button id="machine_buy_1.1" onclick="get_machine(1,1)">机器1.1</button>
+            <button class="level_1" id="machine_buy_1.1" onclick="get_machine(1,1)">机器1.1</button>
             <div class="level_1" id="machine_describe_1.1">机器1.1描述</div>
+            <div class="level_1" id="machine_switch_1.1">开</div>
             <div class="level_1" id="machine_number_1.1">0</div>
             <hr>
         <div id="resource_2">资源2</div>
@@ -178,27 +399,31 @@
             <button onclick="get_resource(2)">获取</button>
             <hr>
             <div class="level_0" id="machine_name_2.0">机器2.0</div>
-            <button id="machine_buy_2.0" onclick="get_machine(2,0)">机器2.0</button>
+            <button class="level_0" id="machine_buy_2.0" onclick="get_machine(2,0)">机器2.0</button>
             <div class="level_0" id="machine_describe_2.0">机器2.0描述</div>
+            <div class="level_0" id="machine_switch_2.0">开</div>
             <div class="level_0" id="machine_number_2.0">0</div>
             <hr>
             <div class="level_1" id="machine_name_2.1">机器2.1</div>
-            <button id="machine_buy_2.1" onclick="get_machine(2,1)">机器2.1</button>
+            <button class="level_1" id="machine_buy_2.1" onclick="get_machine(2,1)">机器2.1</button>
             <div class="level_1" id="machine_describe_2.1">机器2.1描述</div>
+            <div class="level_1" id="machine_switch_2.1">开</div>
             <div class="level_1" id="machine_number_2.1">0</div>
     </div>
     <div id="ui2">研究
         <hr>
         <div>科学生产</div>
-            <div id="knowledge_number">知识点数</div>
+            <div id="knowledge_number">知识点数 0</div>
             <hr>
             <div class="study_0" id="machine_study_name_0">知识机器0</div>
             <button class="study_0" id="machine_study_buy_0" onclick="get_machine_study(0)">知识机器购买</button>
             <div class="study_0" id="machine_study_describe_0">知识机器描述</div>
+            <div class="study_0" id="machine_study_number_0">0</div>
             <hr>
             <div class="study_1" id="machine_study_name_1">知识机器1</div>
             <button class="study_1" id="machine_study_buy_1" onclick="get_machine_study(0)">知识机器购买</button>
             <div class="study_1" id="machine_study_describe_1">知识机器描述</div>
+            <div class="study_1" id="machine_study_number_1">0</div>
         <hr>
         <div>科技</div>
     </div>

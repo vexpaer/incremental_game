@@ -1,0 +1,51 @@
+[
+    {
+        "name": "解锁科学机器",
+        "describe": "可以建造一级科学机器",
+        "knowledge": 1,
+        "class":"study_0",
+        "front":[]
+    },
+    {
+        "name": "level0资源机器",
+        "describe": "可以建造一级资源机器",
+        "knowledge": 10,
+        "class":"level_0",
+        "front":[0]
+    },
+    {
+        "name": "level1资源机器",
+        "describe": "可以建造二级资源机器",
+        "knowledge": 100,
+        "class":"level_1",
+        "front":[1]
+    },
+    {
+        "name": "二级科学机器",
+        "describe": "可以建造二级科学机器",
+        "knowledge": 100,
+        "class":"study_1",
+        "front":[2]
+    },
+    {
+        "name": "能源",
+        "describe": "可以建造能源机器并使用能源",
+        "knowledge": 1000,
+        "class":"power_0",
+        "front":[2]
+    },
+    {
+        "name":"三级资源机器",
+        "describe":"可以建造三级资源机器,消耗能量获得更大速度",
+        "knowledge":10000,
+        "class":"level_2",
+        "front":[4]
+    },
+    {
+        "name":"二级能源机器",
+        "describe":"可以建造二级能源机器,消耗资源获得更大能量",
+        "knowledge":10000,
+        "class":"power_1",
+        "front":[4]
+    }
+]

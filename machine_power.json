@@ -1,0 +1,38 @@
+[
+    {
+        "name": "太阳能光电板",
+        "build_cost":
+        [
+            10,
+            10,
+            50
+        ],
+        "material_cost":
+        [
+            0,
+            0,
+            0
+        ],
+        "build_cost_boost": 1.2,
+        "describe":"太阳能发电，不需要消耗资源,每秒产生10能源",
+        "production":10
+    },
+    {
+        "name":"火力发电厂",
+        "build_cost":
+        [
+            100,
+            10,
+            50
+        ],
+        "material_cost":
+        [
+            10,
+            0,
+            0
+        ],
+        "build_cost_boost": 1.2,
+        "describe":"使用煤炭发电,每秒产生50能源,消耗10木头",
+        "production":50
+    }
+]
